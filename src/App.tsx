@@ -9,21 +9,20 @@ import { DeveloperSettings } from './components/DeveloperSettings';
 import { QuestionChat } from './QuestionGeneration/QuestionChat';
 import { ImageChat } from './components/ImageChat';
 import { BetaEndedScreen } from './components/BetaEndedScreen';
-import { Menu, Loader2 } from 'lucide-react'; // Loader2 eklendi
+import { Menu, Loader2 } from 'lucide-react';
 import { getBetaTestEnded } from './betatoggle';
 import { OfflineMode } from './components/OfflineMode';
 import { VersionDisplay } from './components/VersionDisplay';
 import { ProfileMenu } from './buggyprofile/components/ProfileMenu';
-// import { app, analytics } from './firebase'; // Firebase app ve analytics kullanılmıyorsa kaldırılabilir
 import { useDataSync, SyncedData } from './hooks/useDataSync';
-import type { Chat, Theme, UserProfile, SidebarSettings, Message, AISettings, DailyJournalEntry, UISettings, ChatMetadata } from './types';
-import { supabase } from './utils/supabase'; // Supabase client doğrudan kullanılabilir
+import type { Chat, Theme, UserProfile, SidebarSettings, Message, AISettings, DailyJournalEntry, JournalLogItem, UISettings, ChatMetadata } from './types';
+import { supabase } from './utils/supabase';
 
 function App() {
   const [chatListMeta, setChatListMeta] = useState<ChatMetadata[]>([]);
   const [activeChatDetail, setActiveChatDetail] = useState<Chat | null>(null);
   const [isChatContentLoading, setIsChatContentLoading] = useState<boolean>(false);
-  const [isAppLoading, setIsAppLoading] = useState<boolean>(true); // Uygulama ilk yüklenirken
+  const [isAppLoading, setIsAppLoading] = useState<boolean>(true);
 
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'light');
   const [showSettings, setShowSettings] = useState(false);
@@ -42,6 +41,12 @@ function App() {
     return saved ? JSON.parse(saved) : {};
   });
 
+  // 'journal' state'i burada tanımlanıyor ve AI'nin anıları için kullanılıyor.
+  const [journal, setJournal] = useState<DailyJournalEntry[]>(() => {
+    const savedJournal = localStorage.getItem('aiJournal'); // localStorage'da 'aiJournal' anahtarıyla saklanıyor
+    return savedJournal ? JSON.parse(savedJournal) : [];
+  });
+
   const [aiSettings, setAISettings] = useState<AISettings>(() => {
     const saved = localStorage.getItem('aiSettings');
     const defaults: AISettings = { maxTokens: 2048, temperature: 0.7, importantPoints: [], discussedTopics: [], companyName: 'BuggyCompany' };
@@ -57,11 +62,6 @@ function App() {
     return saved ? JSON.parse(saved) : { showButtonBacklight: true, showFullName: false, showProfileNameInSidebar: true, developerShowButtonBacklight: true };
   });
 
-  const [journal, setJournal] = useState<DailyJournalEntry[]>(() => {
-    const savedJournal = localStorage.getItem('aiJournal');
-    return savedJournal ? JSON.parse(savedJournal) : [];
-  });
-
   const [isQuestionChat, setIsQuestionChat] = useState(false);
   const [isImageChat, setIsImageChat] = useState(false);
   const [betaEnded, setBetaEnded] = useState(() => getBetaTestEnded());
@@ -69,7 +69,6 @@ function App() {
 
   const { syncData, loadData: loadSyncedData } = useDataSync(userProfile?.buid);
 
-  // Verileri yükle
   useEffect(() => {
     const initialLoad = async () => {
       setIsAppLoading(true);
@@ -85,16 +84,16 @@ function App() {
           if (syncedData.theme) setTheme(syncedData.theme);
           if (syncedData.splashGif) setSplashGif(syncedData.splashGif);
           if (syncedData.sidebarSettings) setSidebarSettings(syncedData.sidebarSettings);
+          // Gelen veride 'aiJournal' varsa 'journal' state'ini güncelle
           if (syncedData.aiJournal) setJournal(syncedData.aiJournal);
           if (syncedData.aiSettings) {
             setAISettings(prev => ({ ...prev, ...syncedData.aiSettings, discussedTopics: syncedData.aiSettings?.discussedTopics || prev.discussedTopics || [] }));
           }
           if (syncedData.uiSettings) setUISettings(syncedData.uiSettings);
         } else {
-          setChatListMeta([]); // Supabase'den veri gelmezse veya hata olursa listeyi boşalt
+          setChatListMeta([]);
         }
       } else {
-        // Kullanıcı girişi yoksa localStorage'dan sadece ayarları yükle, sohbetleri yükleme
         const localTheme = localStorage.getItem('theme') as Theme;
         if (localTheme) setTheme(localTheme);
         const localSplash = localStorage.getItem('splashGif');
@@ -109,17 +108,16 @@ function App() {
         }
         const localUISettings = localStorage.getItem('uiSettings');
         if (localUISettings) setUISettings(JSON.parse(localUISettings));
+        // Kullanıcı girişi yoksa localStorage'dan 'aiJournal' yükle
         const savedJournalLocal = localStorage.getItem('aiJournal');
         if (savedJournalLocal) setJournal(JSON.parse(savedJournalLocal));
-        setChatListMeta([]); // Kullanıcı yoksa sohbet listesi boş
+        setChatListMeta([]);
       }
       setIsAppLoading(false);
     };
     initialLoad();
   }, [userProfile?.buid, loadSyncedData]);
 
-
-  // localStorage etkileşimleri (sohbetler hariç)
   useEffect(() => { localStorage.setItem('theme', theme); document.documentElement.className = theme; }, [theme]);
   useEffect(() => { localStorage.setItem('splashGif', splashGif); }, [splashGif]);
   useEffect(() => {
@@ -132,6 +130,7 @@ function App() {
     localStorage.setItem('uiSettings', JSON.stringify(uiSettings));
     document.documentElement.classList.toggle('button-backlight-enabled', !!uiSettings.developerShowButtonBacklight);
   }, [uiSettings]);
+  // 'journal' state'i değiştiğinde localStorage'daki 'aiJournal'ı güncelle
   useEffect(() => { localStorage.setItem('aiJournal', JSON.stringify(journal)); }, [journal]);
 
   useEffect(() => {
@@ -166,11 +165,10 @@ function App() {
       }
     });
   }, []);
-  
+
   const getMessagesForChat = async (uid: string | undefined, chatId: string): Promise<Message[]> => {
     if (!uid) return [];
     try {
-      // Supabase'den tüm veriyi çekip ilgili sohbetin mesajlarını filtrele
       const fullData = await supabase.from('user_data').select('data').eq('uid', uid).single();
       if (fullData.error) throw fullData.error;
       const chatsInData = fullData.data?.data?.chats as Chat[] | undefined;
@@ -189,22 +187,18 @@ function App() {
       setIsImageChat(false);
       return;
     }
-
     setIsChatContentLoading(true);
-    setActiveChatDetail(null); // Önceki sohbeti temizle
-
+    setActiveChatDetail(null);
     try {
       const messages = await getMessagesForChat(userProfile?.buid, id);
       const chatMeta = chatListMeta.find(c => c.id === id);
       if (chatMeta) {
         setActiveChatDetail({ ...chatMeta, messages });
       } else {
-        // Bu durum, chatListMeta'nın güncel olmadığı anlamına gelebilir, nadir olmalı
         setActiveChatDetail({ id, title: "Sohbet Yükleniyor...", messages });
       }
     } catch (error) {
       console.error("Sohbet yüklenirken hata:", error);
-      // Hata durumunda kullanıcıya bilgi verilebilir
       const chatMeta = chatListMeta.find(c => c.id === id);
       setActiveChatDetail({ id, title: chatMeta?.title || "Hata", messages: [{role: 'assistant', content: 'Sohbet yüklenemedi.', timestamp: Date.now()}] });
     } finally {
@@ -215,87 +209,90 @@ function App() {
     }
   }, [userProfile?.buid, chatListMeta, activeChatDetail?.id]);
 
+  const buildDataToSync = useCallback((updatedChatListMeta: ChatMetadata[], updatedActiveChatDetail: Chat | null): SyncedData => {
+    return {
+      chats: updatedChatListMeta.map(meta => ({
+        id: meta.id,
+        title: meta.title,
+        messages: updatedActiveChatDetail?.id === meta.id ? updatedActiveChatDetail.messages : []
+      })),
+      userProfile: JSON.parse(localStorage.getItem('userProfile') || 'null'), // Güncel userProfile state'ini kullanmak daha iyi olabilir
+      theme: (localStorage.getItem('theme') as Theme | null) || undefined,
+      splashGif: localStorage.getItem('splashGif') || undefined,
+      sidebarSettings: JSON.parse(localStorage.getItem('sidebarSettings') || '{}'),
+      uiSettings: JSON.parse(localStorage.getItem('uiSettings') || '{}'),
+      aiSettings: JSON.parse(localStorage.getItem('aiSettings') || '{}'),
+      aiJournal: journal // 'journal' state'ini doğrudan kullan
+    };
+  }, [journal]); // 'journal' state'i dependency olarak eklendi
+
+
   const handleCreateChat = useCallback(async () => {
     const newChatMeta: ChatMetadata = { id: nanoid(), title: 'Yeni Sohbet' };
-    setChatListMeta(prev => [newChatMeta, ...prev]); // Yeni sohbeti listenin başına ekle
+    const newActiveChatDetail: Chat = { ...newChatMeta, messages: [] };
     
-    setActiveChatDetail({ ...newChatMeta, messages: [] });
-    setIsChatContentLoading(false); // Yeni sohbet için yükleme durumu olmaz
-    
+    setChatListMeta(prev => [newChatMeta, ...prev]);
+    setActiveChatDetail(newActiveChatDetail);
+    setIsChatContentLoading(false);
     setShowSidebar(false);
     setIsQuestionChat(false);
     setIsImageChat(false);
 
     if (userProfile?.buid) {
-      const dataToSync: SyncedData = {
-        chats: [newChatMeta, ...chatListMeta].map(meta => ({ // Tüm meta listesini al, yeni eklenenle birlikte
-             id: meta.id, 
-             title: meta.title, 
-             messages: meta.id === newChatMeta.id ? [] : [] // Yeni sohbet boş, diğerleri de senkronizasyonda boş
-        })),
-        userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal
-      };
-      await syncData(dataToSync);
+      const updatedFullChatList = [newChatMeta, ...chatListMeta];
+      await syncData(buildDataToSync(updatedFullChatList, newActiveChatDetail));
     }
-  }, [userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal, syncData, chatListMeta]);
+  }, [userProfile?.buid, syncData, chatListMeta, buildDataToSync]);
 
   const handleDeleteChat = useCallback(async (idToDelete: string) => {
-    const newChatListMeta = chatListMeta.filter(chat => chat.id !== idToDelete);
-    setChatListMeta(newChatListMeta);
+    const newChatListMetaState = chatListMeta.filter(chat => chat.id !== idToDelete);
+    setChatListMeta(newChatListMetaState);
 
+    let nextActiveChatDetail: Chat | null = null;
     if (activeChatDetail?.id === idToDelete) {
-      setActiveChatDetail(null); // Aktif sohbet silindiyse temizle
+      setActiveChatDetail(null);
+      if (newChatListMetaState.length > 0) {
+        // Otomatik olarak ilk sohbete geç ve mesajlarını yükle
+        setIsChatContentLoading(true);
+        const messages = await getMessagesForChat(userProfile?.buid, newChatListMetaState[0].id);
+        nextActiveChatDetail = { ...newChatListMetaState[0], messages };
+        setActiveChatDetail(nextActiveChatDetail);
+        setIsChatContentLoading(false);
+      }
+    } else {
+      nextActiveChatDetail = activeChatDetail;
     }
 
     if (userProfile?.buid) {
-      const dataToSync: SyncedData = {
-        chats: newChatListMeta.map(meta => ({ id: meta.id, title: meta.title, messages: [] })),
-        userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal
-      };
-      await syncData(dataToSync);
+      await syncData(buildDataToSync(newChatListMetaState, nextActiveChatDetail));
     }
-  }, [chatListMeta, activeChatDetail, userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal, syncData]);
+  }, [chatListMeta, activeChatDetail, userProfile?.buid, syncData, buildDataToSync]);
 
   const handleRenameChat = useCallback(async (idToRename: string, newTitle: string) => {
-    const newChatListMeta = chatListMeta.map(chat =>
+    const newChatListMetaState = chatListMeta.map(chat =>
       chat.id === idToRename ? { ...chat, title: newTitle } : chat
     );
-    setChatListMeta(newChatListMeta);
+    setChatListMeta(newChatListMetaState);
 
+    let currentActiveChat = activeChatDetail;
     if (activeChatDetail?.id === idToRename) {
-      setActiveChatDetail(prev => prev ? { ...prev, title: newTitle } : null);
+      currentActiveChat = activeChatDetail ? { ...activeChatDetail, title: newTitle } : null;
+      setActiveChatDetail(currentActiveChat);
     }
     if (userProfile?.buid) {
-      const dataToSync: SyncedData = {
-        chats: newChatListMeta.map(meta => ({
-          id: meta.id,
-          title: meta.title,
-          messages: meta.id === activeChatDetail?.id ? activeChatDetail.messages : []
-        })),
-        userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal
-      };
-      await syncData(dataToSync);
+      await syncData(buildDataToSync(newChatListMetaState, currentActiveChat));
     }
-  }, [chatListMeta, activeChatDetail, userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal, syncData]);
+  }, [chatListMeta, activeChatDetail, userProfile?.buid, syncData, buildDataToSync]);
 
   const handleUpdateActiveChatMessages = useCallback(async (newMessages: Message[]) => {
     if (!activeChatDetail) return;
-
     const updatedChatDetail = { ...activeChatDetail, messages: newMessages };
     setActiveChatDetail(updatedChatDetail);
 
-    if (userProfile?.buid && activeChatDetail.id) {
-      const dataToSync: SyncedData = {
-        chats: chatListMeta.map(meta => ({
-          id: meta.id,
-          title: meta.title,
-          messages: meta.id === activeChatDetail.id ? newMessages : []
-        })),
-        userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal
-      };
-      await syncData(dataToSync);
+    if (userProfile?.buid) {
+      await syncData(buildDataToSync(chatListMeta, updatedChatDetail));
     }
-  }, [activeChatDetail, chatListMeta, userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal, syncData]);
+  }, [activeChatDetail, chatListMeta, userProfile?.buid, syncData, buildDataToSync]);
 
 
   const handleUpdateAISettings = useCallback((updates: Partial<AISettings> | ((prevState: AISettings) => AISettings)) => {
@@ -331,28 +328,21 @@ function App() {
       return updatedProfile;
     });
   }, [handleUpdateAISettings]);
-  
+
   const handleSaveChatFromFeature = useCallback(async (title: string, messages: Message[]) => {
     const newChatMeta: ChatMetadata = { id: nanoid(), title };
-    setChatListMeta(prev => [newChatMeta, ...prev]);
-    setActiveChatDetail({ ...newChatMeta, messages }); // Yeni sohbeti aktif yap
-    setIsQuestionChat(false); // Özellik sohbetlerini kapat
+    const newActiveChat: Chat = { ...newChatMeta, messages };
+
+    const updatedChatListMeta = [newChatMeta, ...chatListMeta];
+    setChatListMeta(updatedChatListMeta);
+    setActiveChatDetail(newActiveChat);
+    setIsQuestionChat(false);
     setIsImageChat(false);
 
     if (userProfile?.buid) {
-      const dataToSync: SyncedData = {
-        chats: [{ ...newChatMeta, messages }, ...chatListMeta].map(meta => ({
-          id: meta.id,
-          title: meta.title,
-          // Aktif olanın mesajlarını ekle, diğerleri için Supabase'deki durumu koru (veya boş gönder)
-          messages: meta.id === newChatMeta.id ? messages : [] 
-        })),
-        userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal
-      };
-      await syncData(dataToSync);
+      await syncData(buildDataToSync(updatedChatListMeta, newActiveChat));
     }
-  }, [userProfile, theme, splashGif, sidebarSettings, uiSettings, aiSettings, aiJournal, syncData, chatListMeta]);
-
+  }, [userProfile?.buid, syncData, chatListMeta, buildDataToSync]);
 
   const handleToggleQuestionChat = () => {
     setIsQuestionChat(prev => !prev);
@@ -360,31 +350,12 @@ function App() {
     if (!isQuestionChat) setActiveChatDetail(null);
   };
 
-  const handleToggleImageChat = (imageData?: string) => {
+  const handleToggleImageChat = () => { // imageData parametresi kaldırıldı, ImageChat kendi içinde yönetecek
     const targetIsImageChatState = !isImageChat;
     setIsImageChat(targetIsImageChatState);
     setIsQuestionChat(false);
-    if (targetIsImageChatState) {
-      setActiveChatDetail(null);
-      if (imageData) { // Resim sohbeti için yeni bir sohbet oluştur ve aktif et
-          const newChat: Chat = {
-            id: nanoid(), title: 'Resim Üretimi', messages: [{
-              role: 'user', content: 'Üzerinde tartışılacak veya başlanacak resim:',
-              images: [imageData], timestamp: Date.now()
-            }]
-          };
-          setChatListMeta(prev => [ {id: newChat.id, title: newChat.title}, ...prev]);
-          setActiveChatDetail(newChat);
-      }
-    } else {
-      // Eğer resim sohbetinden çıkılıyorsa, ve bir önceki aktif sohbet varsa ona dön, yoksa boş kalsın
-      const firstRegularChatMeta = chatListMeta.find(c => c.id !== activeChatDetail?.id || !isImageChat);
-      if (firstRegularChatMeta) {
-        handleSelectChat(firstRegularChatMeta.id);
-      } else {
-        setActiveChatDetail(null);
-      }
-    }
+    setActiveChatDetail(null); // Her zaman aktif sohbeti temizle
+    // ImageChat artık onSaveChat ile yeni sohbet oluşturacak
   };
 
   const handleUpdateSidebarBackground = useCallback((url: string) => {
@@ -400,32 +371,18 @@ function App() {
       return;
     }
     try {
-      // Senkronizasyon için tüm verileri localStorage'dan topla
-      const dataToSync: SyncedData = {
-        chats: chatListMeta.map(meta => ({ // Sadece meta verileri veya aktif olanın mesajlarını ekle
-            id: meta.id,
-            title: meta.title,
-            messages: meta.id === activeChatDetail?.id ? activeChatDetail.messages : []
-        })),
-        userProfile: JSON.parse(localStorage.getItem('userProfile') || 'null'),
-        theme: (localStorage.getItem('theme') as Theme | null) || undefined,
-        splashGif: localStorage.getItem('splashGif') || undefined,
-        sidebarSettings: JSON.parse(localStorage.getItem('sidebarSettings') || '{}'),
-        uiSettings: JSON.parse(localStorage.getItem('uiSettings') || '{}'),
-        aiSettings: JSON.parse(localStorage.getItem('aiSettings') || '{}'),
-        aiJournal: JSON.parse(localStorage.getItem('aiJournal') || '[]')
-      };
-      await syncData(dataToSync);
+      await syncData(buildDataToSync(chatListMeta, activeChatDetail));
       alert('Veriler başarıyla senkronize edildi!');
     } catch (error) {
       console.error('Manual sync error:', error);
       alert('Veri senkronizasyonu sırasında bir hata oluştu.');
     }
-  }, [userProfile?.buid, syncData, chatListMeta, activeChatDetail]);
-
+  }, [userProfile?.buid, syncData, chatListMeta, activeChatDetail, buildDataToSync]);
 
   if (betaEnded) return <BetaEndedScreen />;
-  if (isAppLoading) return <SplashScreen splashGif={splashGif} userProfile={userProfile} isLoading={true} companyName={aiSettings.companyName} />;
+  if (isAppLoading && !userProfile?.buid) { // Sadece kullanıcı girişi yokken ve app yükleniyorsa splash göster
+      return <SplashScreen splashGif={splashGif} userProfile={userProfile} isLoading={true} companyName={aiSettings.companyName} />;
+  }
 
 
   return (
@@ -477,9 +434,9 @@ function App() {
             </div>
         ) : activeChatDetail ? (
           <ChatWindow
-            key={activeChatDetail.id} // Important for re-mount on chat change
+            key={activeChatDetail.id}
             chat={activeChatDetail}
-            onUpdateChat={handleUpdateActiveChatMessages} // This will now update messages for the active chat
+            onUpdateChat={handleUpdateActiveChatMessages}
             userProfile={userProfile}
             onUpdateProfile={handleUpdateProfile}
             isOffline={isOffline}
@@ -487,6 +444,7 @@ function App() {
             addJournalLog={addJournalLog}
             journal={journal}
             syncData={syncData}
+            isLoadingContent={isChatContentLoading}
           />
         ) : (
           <div className="flex items-center justify-center h-full">

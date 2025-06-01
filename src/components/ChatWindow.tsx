@@ -1,60 +1,82 @@
-// project/src/components/ChatWindow.tsx
+// src/components/ChatWindow.tsx
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessages } from './chat/ChatMessages';
 import { ChatInput } from './chat/ChatInput';
-import { Search, X } from 'lucide-react';
-import type { Chat, Message, UserProfile, AISettings, DailyJournalEntry, SyncedData, Theme } from '../types';
+import { Search, X, Loader2 } from 'lucide-react'; // Loader2 eklendi
+import type { Message, UserProfile, AISettings, DailyJournalEntry, SyncedData, Theme, Chat } from '../types';
 import { makeAPIRequest } from '../utils/api';
 import { updateProfileFromMessage } from '../utils/profileUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ChatWindowProps {
-  chat: Chat;
-  onUpdateChat: (chat: Chat) => void;
+  chat: Chat; // Tekrar Chat objesi alacak, App.tsx'de activeChatDetail olarak yönetiliyor.
+  onUpdateChat: (updatedMessages: Message[]) => void; // Sadece mesajları güncelleyecek
   userProfile: UserProfile | null;
   onUpdateProfile: (updates: Partial<UserProfile>) => void;
   isOffline: boolean;
   aiSettings: AISettings;
   addJournalLog: (type: 'user' | 'assistant', content: string) => void;
   journal: DailyJournalEntry[];
-  syncData?: (data: SyncedData) => Promise<void>;
+  syncData?: (data: SyncedData) => Promise<void>; // Bu prop App.tsx'den geliyor
+  isLoadingContent?: boolean; // Bu prop eklendi
 }
 
 export function ChatWindow({
   chat,
-  onUpdateChat,
+  onUpdateChat, // Artık onUpdateMessages yerine onUpdateChat (App.tsx'deki adı handleUpdateActiveChatMessages olacak)
   userProfile,
   onUpdateProfile,
   isOffline,
   aiSettings,
   addJournalLog,
   journal,
-  syncData
+  syncData, // Bu prop App.tsx'den gelecek
+  isLoadingContent // Yeni prop
 }: ChatWindowProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Mesaj gönderme sırasındaki yükleme
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const chatInputRef = useRef<HTMLDivElement>(null);
-  const [chatInputHeight, setChatInputHeight] = useState(90); // Initial estimated height
+  const chatInputContainerRef = useRef<HTMLDivElement>(null); // ChatInput'u saran div için ref
+  const [chatInputHeight, setChatInputHeight] = useState(90);
 
   useEffect(() => {
-    if (chatInputRef.current) {
-      setChatInputHeight(chatInputRef.current.offsetHeight);
+    const inputContainer = chatInputContainerRef.current;
+    if (inputContainer) {
+      const resizeObserver = new ResizeObserver(() => {
+        setChatInputHeight(inputContainer.offsetHeight);
+      });
+      resizeObserver.observe(inputContainer);
+      setChatInputHeight(inputContainer.offsetHeight); // İlk yükseklik ayarı
+      return () => resizeObserver.disconnect();
     }
-  }, [chatInputRef.current?.offsetHeight]);
+  }, []);
 
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((behavior: 'auto' | 'smooth' = 'smooth') => {
+    // Gecikmeyi artırarak DOM güncellemelerinin tamamlanmasına izin ver
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 50);
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }, 100); // Daha uzun bir gecikme deneyin
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [chat.id, chat.messages, scrollToBottom]);
+    scrollToBottom('auto'); // Sohbet değiştiğinde anında en alta git
+  }, [chat.id, scrollToBottom]);
+
+  useEffect(() => {
+    if (chat.messages.length > 0) {
+        // Sadece son mesaj eklendiğinde smooth scroll yap
+        const lastMessageTime = chat.messages[chat.messages.length - 1]?.timestamp;
+        if (lastMessageTime && (Date.now() - lastMessageTime < 500)) { // Son mesaj 500ms içinde eklendiyse
+             scrollToBottom('smooth');
+        } else {
+             scrollToBottom('auto'); // Diğer durumlarda (örn: ilk yükleme, arama) anında scroll
+        }
+    }
+  }, [chat.messages, scrollToBottom]);
+
 
   const handleSendMessage = async (content: string, images?: string[]) => {
     if (isLoading || (!content.trim() && (!images || images.length === 0))) return;
@@ -71,7 +93,7 @@ export function ChatWindow({
     }
 
     const updatedMessagesWithUser = [...chat.messages, userMessage];
-    onUpdateChat({ ...chat, messages: updatedMessagesWithUser });
+    onUpdateChat(updatedMessagesWithUser); // App.tsx'e sadece güncellenmiş mesajları gönder
     setIsLoading(true);
 
     try {
@@ -93,25 +115,12 @@ export function ChatWindow({
           timestamp: Date.now()
         };
         currentMessages = [...currentMessages, assistantMessage];
-        onUpdateChat({ ...chat, messages: currentMessages });
+        onUpdateChat(currentMessages); // App.tsx'e güncel mesajları bildir
         
         if (assistantMessage.content) {
           addJournalLog('assistant', assistantMessage.content);
         }
-
-        if (syncData && userProfile?.buid) {
-          const dataToSync: SyncedData = {
-            chats: JSON.parse(localStorage.getItem('chats') || '[]'),
-            userProfile: JSON.parse(localStorage.getItem('userProfile') || 'null'),
-            theme: localStorage.getItem('theme') as Theme || undefined,
-            splashGif: localStorage.getItem('splashGif') || undefined,
-            sidebarSettings: JSON.parse(localStorage.getItem('sidebarSettings') || '{}'),
-            uiSettings: JSON.parse(localStorage.getItem('uiSettings') || '{}'),
-            aiSettings: JSON.parse(localStorage.getItem('aiSettings') || '{}'),
-            aiJournal: JSON.parse(localStorage.getItem('aiJournal') || '[]')
-          };
-          await syncData(dataToSync);
-        }
+        // SyncData App.tsx'deki onUpdateChat (yani handleUpdateActiveChatMessages) içinde çağrılacak
       } else {
         const errorResponseMessage: Message = {
           role: 'assistant',
@@ -119,7 +128,7 @@ export function ChatWindow({
           timestamp: Date.now(),
         };
         currentMessages = [...currentMessages, errorResponseMessage];
-        onUpdateChat({ ...chat, messages: currentMessages });
+        onUpdateChat(currentMessages);
         if (errorResponseMessage.content) {
           addJournalLog('assistant', errorResponseMessage.content);
         }
@@ -132,12 +141,13 @@ export function ChatWindow({
         content: errorMessageContent,
         timestamp: Date.now(),
       };
-      onUpdateChat({ ...chat, messages: [...updatedMessagesWithUser, errorMessage] });
+      onUpdateChat([...updatedMessagesWithUser, errorMessage]);
       if (errorMessage.content) {
         addJournalLog('assistant', errorMessage.content);
       }
     } finally {
       setIsLoading(false);
+      // scrollToBottom çağrısı messages dependency'li useEffect içinde zaten var.
     }
   };
   
@@ -146,39 +156,29 @@ export function ChatWindow({
     if (messagesForRegeneration.length === 0 || isLoading) return;
 
     setIsLoading(true);
-    onUpdateChat({ ...chat, messages: messagesForRegeneration }); 
+    onUpdateChat(messagesForRegeneration); // Sadece regen yapılacak kısmı gönder
 
     try {
       const response = await makeAPIRequest(messagesForRegeneration, userProfile, aiSettings, journal);
       let currentMessages = [...messagesForRegeneration];
       if (response?.choices?.[0]?.message?.content) {
         const assistantContent = response.choices[0].message.content;
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: assistantContent.trim(),
-          timestamp: Date.now()
-        };
+        const assistantMessage: Message = { role: 'assistant', content: assistantContent.trim(), timestamp: Date.now() };
         currentMessages.push(assistantMessage);
-        onUpdateChat({ ...chat, messages: currentMessages });
-        if (assistantMessage.content) {
-            addJournalLog('assistant', `(Yeniden oluşturuldu) ${assistantMessage.content}`);
-        }
+        onUpdateChat(currentMessages);
+        if (assistantMessage.content) addJournalLog('assistant', `(Yeniden oluşturuldu) ${assistantMessage.content}`);
       } else {
         const errorResponseMessage: Message = { role: 'assistant', content: "Yanıt yeniden oluşturulamadı.", timestamp: Date.now() };
         currentMessages.push(errorResponseMessage);
-        onUpdateChat({ ...chat, messages: currentMessages });
-         if (errorResponseMessage.content) {
-            addJournalLog('assistant', `(Yeniden oluşturma hatası) ${errorResponseMessage.content}`);
-        }
+        onUpdateChat(currentMessages);
+        if (errorResponseMessage.content) addJournalLog('assistant', `(Yeniden oluşturma hatası) ${errorResponseMessage.content}`);
       }
     } catch (error) {
       console.error('Error regenerating message:', error);
       const errorMessageContent = error instanceof Error ? error.message : "Yeniden oluşturma sırasında bir hata oluştu.";
       const errorMessage: Message = { role: 'assistant', content: errorMessageContent, timestamp: Date.now() };
-      onUpdateChat({ ...chat, messages: [...messagesForRegeneration, errorMessage] });
-      if (errorMessage.content) {
-        addJournalLog('assistant', `(Yeniden oluşturma hatası) ${errorMessage.content}`);
-      }
+      onUpdateChat([...messagesForRegeneration, errorMessage]);
+      if (errorMessage.content) addJournalLog('assistant', `(Yeniden oluşturma hatası) ${errorMessage.content}`);
     } finally {
       setIsLoading(false);
     }
@@ -190,46 +190,38 @@ export function ChatWindow({
 
     const contextMessages = chat.messages.slice(0, index + 1);
     const explanationRequestContent = `"${messageToExplain.content}" bu mesajı daha detaylı açıklar mısın?`;
-    const explanationRequestMessage: Message = {
-      role: 'user',
-      content: explanationRequestContent,
-      timestamp: Date.now()
-    };
+    const explanationRequestMessage: Message = { role: 'user', content: explanationRequestContent, timestamp: Date.now() };
     
     addJournalLog('user', explanationRequestContent);
 
     setIsLoading(true);
-    let messagesWithExplanationRequest = [...chat.messages, explanationRequestMessage];
-    onUpdateChat({ ...chat, messages: messagesWithExplanationRequest });
+    // Önceki mesajları ve açıklama isteğini içeren yeni bir mesaj listesi oluştur
+    const messagesWithNewRequest = [...chat.messages, explanationRequestMessage];
+    onUpdateChat(messagesWithNewRequest); // Bu, App.tsx'e tüm mesajları gönderir, App.tsx bunu yönetir
 
     try {
       const response = await makeAPIRequest([...contextMessages, explanationRequestMessage], userProfile, aiSettings, journal);
-      let currentMessages = [...messagesWithExplanationRequest];
+      let currentMessagesAfterExplain = [...messagesWithNewRequest]; // Açıklama isteği dahil
 
       if (response?.choices?.[0]?.message?.content) {
         const explanationContent = response.choices[0].message.content;
         const explanationResponseMessage: Message = { role: 'assistant', content: explanationContent.trim(), timestamp: Date.now() };
-        currentMessages.push(explanationResponseMessage);
-        onUpdateChat({ ...chat, messages: currentMessages});
-        if (explanationResponseMessage.content) {
-            addJournalLog('assistant', `(Açıklama) ${explanationResponseMessage.content}`);
-        }
+        currentMessagesAfterExplain = [...currentMessagesAfterExplain, explanationResponseMessage]; // API yanıtını ekle
+        onUpdateChat(currentMessagesAfterExplain);
+        if (explanationResponseMessage.content) addJournalLog('assistant', `(Açıklama) ${explanationResponseMessage.content}`);
       } else {
          const errorResponseMessage: Message = { role: 'assistant', content: "Açıklama alınamadı.", timestamp: Date.now() };
-        currentMessages.push(errorResponseMessage);
-        onUpdateChat({ ...chat, messages: currentMessages });
-        if (errorResponseMessage.content) {
-            addJournalLog('assistant', `(Açıklama hatası) ${errorResponseMessage.content}`);
-        }
+        currentMessagesAfterExplain = [...currentMessagesAfterExplain, errorResponseMessage];
+        onUpdateChat(currentMessagesAfterExplain);
+        if (errorResponseMessage.content) addJournalLog('assistant', `(Açıklama hatası) ${errorResponseMessage.content}`);
       }
     } catch (error) {
       console.error('Error getting explanation:', error);
        const errorMessageContent = error instanceof Error ? error.message : "Açıklama getirilirken bir hata oluştu.";
        const errorMessage: Message = { role: 'assistant', content: errorMessageContent, timestamp: Date.now() };
-      onUpdateChat({ ...chat, messages: [...messagesWithExplanationRequest, errorMessage] });
-      if (errorMessage.content) {
-        addJournalLog('assistant', `(Açıklama hatası) ${errorMessage.content}`);
-      }
+       const finalMessagesWithError = [...messagesWithNewRequest, errorMessage];
+      onUpdateChat(finalMessagesWithError);
+      if (errorMessage.content) addJournalLog('assistant', `(Açıklama hatası) ${errorMessage.content}`);
     } finally {
       setIsLoading(false);
     }
@@ -237,9 +229,9 @@ export function ChatWindow({
 
   const toggleSearch = () => {
     setShowSearch(prev => !prev);
-    if (!showSearch && !prev) { 
+    if (!showSearch) { 
       setTimeout(() => searchInputRef.current?.focus(), 100); 
-    } else if (showSearch && !prev) { 
+    } else { 
        setSearchTerm('');
     }
   };
@@ -250,9 +242,17 @@ export function ChatWindow({
       )
     : chat.messages;
 
+  if (isLoadingContent) { // Yeni prop kontrolü
+    return (
+      <div className="flex-1 flex flex-col h-full items-center justify-center bg-white dark:bg-gray-900">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+        <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Sohbet yükleniyor...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full bg-white dark:bg-gray-900 relative">
-      
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2 p-2 bg-white/50 dark:bg-black/30 backdrop-blur-md rounded-lg shadow-md">
         <button
           onClick={toggleSearch}
@@ -293,8 +293,8 @@ export function ChatWindow({
       </div>
 
       <div 
-        className="flex-1 overflow-y-auto messages-container"
-        style={{ paddingBottom: `${chatInputHeight + 16}px`, paddingTop: '70px' }} // Dynamic paddingBottom + paddingTop for floating search
+        className="flex-1 overflow-y-auto messages-container" // Bu class'ı CSS'de hedefleyeceğiz
+        style={{ paddingBottom: `${chatInputHeight + 16}px`, paddingTop: '70px' }}
       > 
         <ChatMessages
           messages={filteredMessages}
@@ -305,7 +305,7 @@ export function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
       
-      <div ref={chatInputRef}> {/* Added ref to ChatInput wrapper */}
+      <div ref={chatInputContainerRef}> {/* ChatInput'u saran div */}
         <ChatInput
           onSendMessage={handleSendMessage}
           isLoading={isLoading}

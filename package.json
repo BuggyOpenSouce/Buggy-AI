@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@huggingface/inference": "^2.6.4",
+    "@huggingface/inference": "^2.8.1",
     "@supabase/supabase-js": "^2.39.7",
     "chart.js": "^4.4.1",
     "compressorjs": "^1.2.1",

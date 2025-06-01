@@ -1,0 +1,600 @@
+/* project/src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .input {
+    @apply w-full h-[45px] pl-12 pr-16 py-2 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-transparent rounded-xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-gray-900 transition-all duration-300;
+  }
+
+  .input::placeholder {
+    @apply text-gray-400 dark:text-gray-500;
+  }
+
+  .input:focus {
+    @apply shadow-[0_0_0_4px_rgba(99,102,241,0.3)] dark:shadow-[0_0_0_4px_rgba(99,102,241,0.2)];
+  }
+}
+
+/* Font imports */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Fira+Code:wght@400;500;600&display=swap');
+
+/* Global buton arka aydınlatma stilleri */
+.button-backlight-enabled button,
+.button-backlight-enabled .regular-button, 
+.button-backlight-enabled .send-button,   
+.button-backlight-enabled .icon-button,  
+.button-backlight-enabled input[type="button"],
+.button-backlight-enabled input[type="submit"],
+.button-backlight-enabled [role="button"] {
+  box-shadow: 0 0 10px 2px rgba(0, 0, 0, 0.12); 
+  transition: box-shadow 0.25s ease-in-out;
+}
+
+.button-backlight-enabled button:hover,
+.button-backlight-enabled .regular-button:hover,
+.button-backlight-enabled .send-button:hover,
+.button-backlight-enabled .icon-button:hover,
+.button-backlight-enabled input[type="button"]:hover,
+.button-backlight-enabled input[type="submit"]:hover,
+.button-backlight-enabled [role="button"]:hover {
+  box-shadow: 0 0 15px 3px rgba(0, 0, 0, 0.22);
+}
+
+.dark .button-backlight-enabled button,
+.dark .button-backlight-enabled .regular-button,
+.dark .button-backlight-enabled .send-button,
+.dark .button-backlight-enabled .icon-button,
+.dark .button-backlight-enabled input[type="button"],
+.dark .button-backlight-enabled input[type="submit"],
+.dark .button-backlight-enabled [role="button"] {
+  box-shadow: 0 0 10px 2px rgba(225, 225, 245, 0.1);
+}
+
+.dark .button-backlight-enabled button:hover,
+.dark .button-backlight-enabled .regular-button:hover,
+.dark .button-backlight-enabled .send-button:hover,
+.dark .button-backlight-enabled .icon-button:hover,
+.dark .button-backlight-enabled input[type="button"]:hover,
+.dark .button-backlight-enabled input[type="submit"]:hover,
+.dark .button-backlight-enabled [role="button"]:hover {
+  box-shadow: 0 0 15px 3px rgba(230, 230, 255, 0.2);
+}
+
+.button-backlight-enabled .no-global-backlight {
+  box-shadow: none !important;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px; /* Yatay scrollbar için */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-700;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-600;
+}
+
+/* Message content styles */
+.message-bubble {
+  @apply max-w-[70%] sm:max-w-[80%] md:max-w-[75%] rounded-xl px-4 py-3 shadow-sm;
+}
+
+.message-bubble.user {
+  @apply bg-indigo-500 text-white;
+}
+
+.message-bubble.assistant {
+  @apply bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white;
+}
+
+.message-bubble p {
+  @apply leading-relaxed mb-1; 
+}
+
+.message-bubble ul, .message-bubble ol {
+  @apply my-2 pl-5;
+}
+.message-bubble ul {
+  @apply list-disc;
+}
+.message-bubble ol {
+  @apply list-decimal;
+}
+.message-bubble li {
+  @apply mb-1 leading-relaxed;
+}
+
+/* Code Block Styles */
+.code-block-container {
+  @apply bg-gray-800 dark:bg-black/70 rounded-lg shadow-md my-3 border border-gray-700 dark:border-gray-600;
+}
+
+.code-block-header {
+  @apply flex justify-between items-center px-3 py-1.5 bg-gray-700/50 dark:bg-black/40 rounded-t-lg text-xs text-gray-300 dark:text-gray-400 border-b border-gray-600 dark:border-gray-500;
+}
+
+.code-language {
+  @apply font-semibold uppercase tracking-wider;
+}
+
+.code-actions {
+  @apply flex gap-2;
+}
+
+.code-actions button {
+  @apply text-gray-300 dark:text-gray-400 hover:text-white p-1 rounded transition-colors duration-150;
+}
+.code-actions button:hover {
+  @apply bg-gray-600/70 dark:bg-gray-700/80;
+}
+.code-actions button svg {
+  @apply w-4 h-4;
+}
+
+/* Overriding react-markdown default pre/code styling inside our container */
+.code-block-container pre {
+  @apply !my-0 !p-0 !bg-transparent !rounded-none !shadow-none !border-none; /* Reset pre defaults */
+}
+
+.code-block-container pre > code {
+  @apply block p-4 font-mono text-sm whitespace-pre overflow-x-auto custom-scrollbar; /* Apply padding and scroll to code */
+  /* Line numbering can be added here with JS or more complex CSS if needed */
+}
+
+
+/* Inline code (outside of pre blocks) */
+.message-bubble > div > p code, 
+.message-bubble > div > ul code, 
+.message-bubble > div > ol code,
+.message-bubble > div > li code { /* More specific to target only inline code */
+  @apply px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700/80 rounded text-sm font-mono text-red-500 dark:text-red-400;
+  word-break: break-all; /* Allow long inline code to break */
+}
+
+
+/* KaTeX styles */
+.katex-display {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  @apply p-2 bg-gray-50 dark:bg-gray-800/50 rounded; /* Added background for better visibility */
+
+}
+
+.katex {
+  font-size: 1.1em;
+}
+
+.katex-display > .katex {
+  white-space: normal;
+}
+
+/* Dark mode overrides */
+.dark body {
+  @apply bg-gray-900;
+}
+
+.dark .chat-window {
+  @apply bg-gray-900;
+}
+
+/* Font styles */
+.font-serif {
+  font-family: 'Merriweather', serif;
+}
+
+.font-sans {
+  font-family: 'Inter', sans-serif;
+}
+
+.font-mono {
+  font-family: 'Fira Code', monospace;
+}
+
+/* Text formatting */
+.text-spaced {
+  letter-spacing: 0.2em;
+}
+
+/* Blur overlay with animation */
+.sidebar-overlay {
+  @apply fixed inset-0 z-40;
+  animation: overlay-fade-in 0.3s ease-out forwards;
+  backdrop-filter: blur(0px);
+  animation: blur-in 0.3s forwards;
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+}
+
+@keyframes blur-in {
+  from {
+    backdrop-filter: blur(0px);
+  }
+  to {
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+/* Scale animations */
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+.hover\:scale-105:hover {
+  transform: scale(1.05);
+}
+
+/* Slide animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.slide-enter {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.slide-exit {
+  animation: slideOut 0.3s ease-out forwards;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .chat-container {
+    flex-direction: column;
+  }
+  
+  .chat-sidebar {
+    width: 100%;
+    max-height: 60vh; 
+  }
+  
+  .messages-container {
+    padding-bottom: 110px; /* Increased slightly for more buffer */
+  }
+}
+
+
+/* Pen styles */
+.pen-light {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.pen-dark {
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* Smooth transitions */
+button,
+input,
+textarea,
+.transition-all {
+  transition-property: all; 
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); 
+  transition-duration: 150ms; 
+}
+
+.button-backlight-enabled button,
+.button-backlight-enabled .regular-button,
+.button-backlight-enabled .send-button,
+.button-backlight-enabled .icon-button {
+  transition: box-shadow 0.25s ease-in-out, background-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+
+/* Improve backdrop blur transitions */
+.backdrop-blur,
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg {
+  transition: backdrop-filter 0.3s ease-in-out;
+}
+
+/* Hamburger button styles */
+.hamburger-button {
+  @apply fixed top-4 left-4 z-[60] p-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white shadow-lg;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.hamburger-button.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-100%);
+}
+
+/* Profile button */
+.profile-button {
+  @apply flex items-center gap-2 px-3 py-2 rounded-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 shadow-lg;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+/* Menu animations */
+.menu-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.menu-slide-out {
+  animation: slideOut 0.3s ease-out forwards;
+}
+
+/* Question Panel Drawing Canvas */
+canvas {
+  touch-action: none;
+}
+
+/* Twilight Theme - already defined, ensure it's not duplicated or conflicts */
+.twilight {
+  --tw-bg-primary: 61, 174, 233;
+  --tw-bg-secondary: 147, 206, 233;
+  --tw-bg-surface: 35, 38, 41;
+  --tw-bg-background: 27, 30, 32;
+  --tw-text-primary: 239, 240, 241;
+  --tw-text-secondary: 189, 195, 199;
+  --tw-border-color: 49, 54, 59;
+}
+
+.twilight body {
+  background-color: rgb(var(--tw-bg-background));
+  color: rgb(var(--tw-text-primary));
+}
+
+.twilight .bg-white {
+  background-color: rgb(var(--tw-bg-surface));
+}
+.twilight .bg-gray-50 { 
+  background-color: rgba(var(--tw-bg-surface), 0.7); 
+}
+.twilight .dark\:bg-gray-800 { 
+    background-color: rgb(var(--tw-bg-surface));
+}
+
+.twilight .bg-gray-100 { /* For assistant message bubbles */
+  background-color: rgb(var(--tw-bg-surface)); 
+}
+.twilight .dark\:bg-gray-700\/50 { /* For some settings panels */
+    background-color: rgba(var(--tw-bg-surface), 0.5);
+}
+.twilight .dark\:bg-gray-800\/90 { /* For settings main panel */
+    background-color: rgba(var(--tw-bg-surface), 0.9);
+}
+
+
+.twilight .text-gray-900 {
+  color: rgb(var(--tw-text-primary));
+}
+.twilight .dark\:text-white { 
+    color: rgb(var(--tw-text-primary));
+}
+.twilight .dark\:text-gray-100 { /* For input text */
+    color: rgb(var(--tw-text-primary));
+}
+.twilight .dark\:text-gray-300 { /* For secondary text */
+    color: rgb(var(--tw-text-secondary));
+}
+.twilight .dark\:text-gray-400 { /* For placeholder/icons */
+    color: rgba(var(--tw-text-secondary), 0.7);
+}
+.twilight .dark\:text-gray-500 { /* For placeholder/icons */
+    color: rgba(var(--tw-text-secondary), 0.6);
+}
+
+
+.twilight .border-gray-200 {
+  border-color: rgb(var(--tw-border-color));
+}
+.twilight .dark\:border-gray-700 { 
+    border-color: rgb(var(--tw-border-color));
+}
+.twilight .dark\:border-gray-800 { /* For input fixed bar */
+    border-color: rgb(var(--tw-border-color));
+}
+
+
+.twilight .hover\:bg-gray-100:hover {
+  background-color: rgba(var(--tw-bg-primary), 0.1);
+}
+.twilight .dark\:hover\:bg-gray-700:hover {
+  background-color: rgba(var(--tw-bg-primary), 0.15);
+}
+.twilight .dark\:hover\:bg-gray-800:hover { /* For ChatList items */
+   background-color: rgba(var(--tw-bg-primary), 0.1);
+}
+
+
+.twilight .bg-blue-500 {
+  background-color: rgb(var(--tw-bg-primary));
+}
+
+.twilight .hover\:bg-blue-600:hover {
+  background-color: rgb(var(--tw-bg-secondary));
+}
+.twilight .text-indigo-500 { /* User message bubble */
+    color: rgb(var(--tw-text-primary)); /* Or a slightly different color for user messages if desired */
+}
+.twilight .bg-indigo-500 { /* User message bubble */
+    background-color: rgb(var(--tw-bg-primary));
+}
+.twilight .dark\:bg-indigo-400 { /* For loading dots, adjust if needed */
+    background-color: rgb(var(--tw-bg-secondary));
+}
+.twilight .text-indigo-400 { /* For loading icon, adjust if needed */
+    color: rgb(var(--tw-bg-secondary));
+}
+
+
+/* Specific Twilight overrides for code blocks */
+.twilight .code-block-container {
+  @apply bg-gray-900 border-gray-700; /* Slightly darker than surface */
+}
+.twilight .code-block-header {
+  @apply bg-gray-800 text-gray-400 border-gray-700;
+}
+.twilight .code-block-container pre > code {
+  @apply text-gray-200; /* Lighter text for code */
+}
+.twilight .code-actions button {
+  @apply text-gray-400 hover:text-white;
+}
+.twilight .code-actions button:hover {
+  @apply bg-gray-700;
+}
+.twilight .message-bubble > div > p code,
+.twilight .message-bubble > div > ul code, 
+.twilight .message-bubble > div > ol code,
+.twilight .message-bubble > div > li code {
+  @apply bg-gray-700 text-red-400;
+}
+
+
+.fullscreen-message {
+  @apply fixed inset-0 z-50 bg-transparent backdrop-blur-lg;
+  transition: all 0.3s ease-in-out;
+}
+
+.settings-overlay {
+  @apply fixed inset-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Add new animation keyframes */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleFade {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes blurFade {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* Profile menu animations */
+.profile-menu-overlay {
+  animation: blurFade 0.3s ease-out forwards;
+}
+
+.profile-menu-content {
+  animation: scaleFade 0.3s ease-out forwards;
+}
+
+.profile-menu-item {
+  animation: slideUpFade 0.3s ease-out forwards;
+}
+
+.profile-menu-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.profile-menu-item:nth-child(3) {
+  animation-delay: 0.2s;
+}

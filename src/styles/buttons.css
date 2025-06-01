@@ -1,0 +1,135 @@
+/* Send Message Button */
+.send-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 45px;
+  height: 45px;
+  background-color: rgba(79, 70, 229, 0.1); /* Lightly tinted semi-transparent */
+  border: 1px solid rgba(79, 70, 229, 0.3); /* Subtle border */
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  transform: none;
+  backdrop-filter: blur(4px); /* Frosted glass effect */
+}
+
+.send-button:hover {
+  background-color: rgba(79, 70, 229, 0.2); 
+  border-color: rgba(79, 70, 229, 0.5);
+  transform: translateY(-2px);
+}
+
+.send-button:active {
+  transform: translateY(0);
+  background-color: rgba(79, 70, 229, 0.25);
+}
+
+.send-button:disabled {
+  background-color: rgba(156, 163, 175, 0.05); /* More transparent gray */
+  border-color: rgba(156, 163, 175, 0.2);
+  opacity: 0.7; /* Overall opacity for disabled state */
+  cursor: not-allowed;
+  transform: none;
+  backdrop-filter: none; /* No blur when disabled */
+}
+
+.dark .send-button {
+  background-color: rgba(99, 102, 241, 0.15); 
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.dark .send-button:hover {
+  background-color: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.dark .send-button:disabled {
+  background-color: rgba(75, 85, 99, 0.1); 
+  border-color: rgba(75, 85, 99, 0.2);
+  opacity: 0.7;
+}
+
+/* Regular Button */
+.regular-button {
+  cursor: pointer;
+  padding: 0.5em 0.8em;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  backdrop-filter: blur(2px);
+}
+
+.regular-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.regular-button:active {
+  transform: translateY(0);
+}
+
+/* Button sizes */
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-md {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+/* Button variants */
+.btn-primary {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: white;
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 2px solid currentColor;
+}
+
+/* Icon button */
+.icon-button {
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  /* Default to transparent background for icon buttons */
+  background-color: transparent; 
+}
+
+.icon-button:hover {
+  transform: translateY(-2px);
+  background-color: rgba(128, 128, 128, 0.1); /* Generic subtle hover */
+}
+.dark .icon-button:hover {
+  background-color: rgba(200, 200, 200, 0.1); /* Generic subtle hover for dark*/
+}
+
+
+.icon-button:active {
+  transform: translateY(0);
+}

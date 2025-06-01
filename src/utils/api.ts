@@ -1,22 +1,13 @@
 // project/src/utils/api.ts
 import { AI_PROVIDERS, SITE_URL, SITE_NAME, SYSTEM_PROMPT } from '../config';
-import { HF_PROVIDER, makeHFAPIRequest } from '../confighuggingtext';
-import type { Message, UserProfile, AISettings, DailyJournalEntry } from '../types';
+import type { Message, UserProfile, AISettings, DailyJournalEntry, JournalLogItem } from '../types';
 
 let currentProviderIndex = 0;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 30000; // 30 saniye
 
 export function getCurrentProvider() {
-  // If current provider is HF, return HF provider info
-  if (currentProviderIndex === -1) {
-    return {
-      index: -1,
-      name: HF_PROVIDER.name
-    };
-  }
-  
   return {
     index: currentProviderIndex,
     name: `Yapay Zeka ${currentProviderIndex + 1}`
@@ -24,10 +15,7 @@ export function getCurrentProvider() {
 }
 
 export async function setCurrentProvider(index: number) {
-  if (index === -1) {
-    // Special case for HuggingFace provider
-    currentProviderIndex = -1;
-  } else if (index >= 0 && index < AI_PROVIDERS.length) {
+  if (index >= 0 && index < AI_PROVIDERS.length) {
     currentProviderIndex = index;
   } else {
     console.warn(`Geçersiz sağlayıcı dizini ayarlanmaya çalışıldı: ${index}. 0'a sıfırlanıyor.`);
@@ -61,11 +49,6 @@ export async function makeAPIRequest(
   aiSettings?: AISettings | null,
   journal?: DailyJournalEntry[] | null
 ) {
-  // If using HuggingFace provider
-  if (currentProviderIndex === -1) {
-    return makeHFAPIRequest(messages);
-  }
-
   let attempts = 0;
   const maxAttempts = AI_PROVIDERS.length * MAX_RETRIES;
 
@@ -113,12 +96,16 @@ export async function makeAPIRequest(
     const elseMatch = SYSTEM_PROMPT.match(/\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/);
     let baseElseContent = elseMatch ? elseMatch[1].trim() : "Merhaba! Ben BuggyAI. Seninle tanışmak isterim. Bana biraz kendinden bahseder misin?";
     
+    // Temel Markdown talimatlarını "else" bloğuna da ekleyelim.
+    // Bu talimatlar ana prompt'tan kaldırılıp sadece buraya eklenebilir veya her iki yerde de tutulabilir.
+    // Şimdilik, eğer userProfile yoksa, Markdown talimatlarının eklendiğinden emin olalım.
     const markdownInstruction = "Lütfen cevaplarında metin formatlaması için Markdown sözdizimini kullan. Kalın metin için **metin**, italik için *metin*, üstü çizili için ~~metin~~ ve altı çizili için <u>metin</u> kullanabilirsin. Matematiksel ifadeler için LaTeX sözdizimini satır içinde $ifade$ veya blok olarak $$ifade$$ şeklinde kullan.";
-    if (!baseElseContent.includes(markdownInstruction.substring(0,30))) {
+    if (!baseElseContent.includes(markdownInstruction.substring(0,30))) { // Basit bir kontrol
         baseElseContent += `\n\n${markdownInstruction}`;
     }
 
     systemPromptContent = systemPromptContent.replace(/\{\{#if userProfile\}\}[\s\S]*?(\{\{else\}\}[\s\S]*?)?\{\{\/if\}\}/g, baseElseContent);
+    // Kalan placeholder'ları temizle
     systemPromptContent = systemPromptContent.replace(/\{\{userProfile\.nickname\}\}/g, 'Kullanıcı');
     systemPromptContent = systemPromptContent.replace(/\{\{#if userProfile\.interests_string_with_status\}\}[\s\S]*?\{\{\/if\}\}/g, '');
   }

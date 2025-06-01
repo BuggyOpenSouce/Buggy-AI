@@ -1,4 +1,4 @@
-// project/src/components/chat/ChatInput.tsx
+// src/components/chat/ChatInput.tsx
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Send, Paperclip, X } from 'lucide-react';
 import Compressor from 'compressorjs';
@@ -8,17 +8,35 @@ interface ChatInputProps {
   onSendMessage: (content: string, images?: string[]) => void;
   isLoading: boolean;
   isOffline: boolean;
+  // onHeightChange?: (height: number) => void; // Opsiyonel yükseklik değişim prop'u
 }
 
 export function ChatInput({ onSendMessage, isLoading, isOffline }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [images, setImages] = useState<string[]>([]);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  // imageFiles state'i proje içinde başka yerde kullanılmıyorsa ve sadece base64 yeterliyse kaldırılabilir.
+  // const [imageFiles, setImageFiles] = useState<File[]>([]); 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatInputDivRef = useRef<HTMLDivElement>(null); // En dış div için ref
+
 
   const MAX_IMAGES = 5;
   const MAX_IMAGE_SIZE_MB = 5;
+
+  const adjustTextareaHeight = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'; // Önce sıfırla
+      let scrollHeight = textareaRef.current.scrollHeight;
+      // Minimum yükseklik 45px olacak şekilde ayarla
+      textareaRef.current.style.height = `${Math.max(scrollHeight, 45)}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input, images, adjustTextareaHeight]);
+
 
   const handleSend = useCallback(() => {
     if ((!input.trim() && images.length === 0) || isLoading || isOffline) {
@@ -27,14 +45,10 @@ export function ChatInput({ onSendMessage, isLoading, isOffline }: ChatInputProp
     onSendMessage(input, images);
     setInput('');
     setImages([]);
-    setImageFiles([]);
+    // setImageFiles([]);
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      // Ensure scrollHeight is calculated correctly for height adjustment
-      let scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${scrollHeight < 45 ? 45 : scrollHeight}px`;
-      if(scrollHeight <= 45) textareaRef.current.style.height = '45px';
-
+      // Gönderdikten sonra textarea'yı başlangıç yüksekliğine döndür
+      textareaRef.current.style.height = '45px'; 
     }
   }, [input, images, isLoading, isOffline, onSendMessage]);
 
@@ -54,7 +68,7 @@ export function ChatInput({ onSendMessage, isLoading, isOffline }: ChatInputProp
     }
 
     const newBase64Images: string[] = [];
-    const newImageFiles: File[] = [];
+    // const newImageFilesData: File[] = [];
 
     for (const file of files) {
       if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
@@ -69,12 +83,8 @@ export function ChatInput({ onSendMessage, isLoading, isOffline }: ChatInputProp
       try {
         const compressedFile = await new Promise<Blob>((resolve, reject) => {
           new Compressor(file, {
-            quality: 0.8,
-            maxWidth: 1024,
-            maxHeight: 1024,
-            mimeType: 'image/jpeg',
-            success: resolve,
-            error: reject,
+            quality: 0.8, maxWidth: 1024, maxHeight: 1024, mimeType: 'image/jpeg',
+            success: resolve, error: reject,
           });
         });
 
@@ -85,7 +95,7 @@ export function ChatInput({ onSendMessage, isLoading, isOffline }: ChatInputProp
           reader.readAsDataURL(compressedFile);
         });
         newBase64Images.push(base64);
-        newImageFiles.push(file);
+        // newImageFilesData.push(file);
       } catch (error) {
         console.error("Error processing file:", file.name, error);
         alert(`${file.name} işlenirken bir hata oluştu.`);
@@ -94,38 +104,27 @@ export function ChatInput({ onSendMessage, isLoading, isOffline }: ChatInputProp
 
     if (newBase64Images.length > 0) {
       setImages(prev => [...prev, ...newBase64Images]);
-      setImageFiles(prev => [...prev, ...newImageFiles]);
+      // setImageFiles(prev => [...prev, ...newImageFilesData]);
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
+    // Yükseklik ayarı için useEffect tetiklenecek
   };
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    // setImageFiles(prev => prev.filter((_, i) => i !== index));
+    // Yükseklik ayarı için useEffect tetiklenecek
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${scrollHeight < 45 ? 45 : scrollHeight}px`;
-    }
+    // Yükseklik ayarı için adjustTextareaHeight zaten useEffect içinde çağrılacak.
   };
   
-  useEffect(() => {
-    if (textareaRef.current) {
-        textareaRef.current.style.height = '45px'; // Initial and reset height
-        const scrollHeight = textareaRef.current.scrollHeight;
-        textareaRef.current.style.height = `${scrollHeight < 45 ? 45 : scrollHeight}px`;
-    }
-  }, [input]);
-
-
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-2 sm:p-3 bg-white/20 dark:bg-black/10 backdrop-blur-lg shadow-lg">
+    <div ref={chatInputDivRef} className="fixed bottom-0 left-0 right-0 p-2 sm:p-3 bg-white/20 dark:bg-black/10 backdrop-blur-lg shadow-lg">
       {images.length > 0 && (
-        <div className="flex gap-2 mb-2 overflow-x-auto pb-2 px-1 sm:px-0">
+        <div className="flex gap-2 mb-2 overflow-x-auto pb-2 px-1 sm:px-0 custom-scrollbar">
           {images.map((imgSrc, index) => (
             <div key={index} className="relative flex-shrink-0 w-20 h-20 group">
               <img
@@ -182,13 +181,13 @@ export function ChatInput({ onSendMessage, isLoading, isOffline }: ChatInputProp
                      transition-all duration-300 resize-none overflow-y-auto 
                      disabled:opacity-60 disabled:cursor-not-allowed placeholder-gray-700/70 dark:placeholder-gray-300/70"
           rows={1}
-          style={{ scrollbarWidth: 'none' }}
+          style={{ scrollbarWidth: 'none' }} // Firefox için
         />
         
         <button
           onClick={handleSend}
           disabled={(!input.trim() && images.length === 0) || isLoading || isOffline}
-          className="send-button self-end mb-[1px]"
+          className="send-button self-end mb-[1px]" // `button-backlight` class'ı `index.css` veya `buttons.css` içinde tanımlı olmalı
           aria-label="Mesaj Gönder"
         >
           <Send className="w-5 h-5 text-blue-500 dark:text-blue-400" />

@@ -22,13 +22,13 @@
 
 /* Global buton arka aydınlatma stilleri */
 .button-backlight-enabled button,
-.button-backlight-enabled .regular-button, 
-.button-backlight-enabled .send-button,   
-.button-backlight-enabled .icon-button,  
+.button-backlight-enabled .regular-button,
+.button-backlight-enabled .send-button,
+.button-backlight-enabled .icon-button,
 .button-backlight-enabled input[type="button"],
 .button-backlight-enabled input[type="submit"],
 .button-backlight-enabled [role="button"] {
-  box-shadow: 0 0 10px 2px rgba(0, 0, 0, 0.12); 
+  box-shadow: 0 0 10px 2px rgba(0, 0, 0, 0.12);
   transition: box-shadow 0.25s ease-in-out;
 }
 
@@ -99,7 +99,7 @@
 }
 
 .message-bubble p {
-  @apply leading-relaxed mb-1; 
+  @apply leading-relaxed mb-1;
 }
 
 .message-bubble ul, .message-bubble ol {
@@ -154,8 +154,8 @@
 
 
 /* Inline code (outside of pre blocks) */
-.message-bubble > div > p code, 
-.message-bubble > div > ul code, 
+.message-bubble > div > p code,
+.message-bubble > div > ul code,
 .message-bubble > div > ol code,
 .message-bubble > div > li code { /* More specific to target only inline code */
   @apply px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700/80 rounded text-sm font-mono text-red-500 dark:text-red-400;
@@ -309,7 +309,7 @@
     transform: translateX(0);
     opacity: 1;
   }
-  
+
   to {
     transform: translateX(100%);
     opacity: 0;
@@ -329,15 +329,15 @@
   .chat-container {
     flex-direction: column;
   }
-  
+
   .chat-sidebar {
     width: 100%;
-    max-height: 60vh; 
+    max-height: 60vh;
   }
-  
-  /* .messages-container { */
-    /* padding-bottom: 110px; /* Bu satır kaldırıldı, JavaScript ile dinamik olarak ayarlanacak */ */
-  /* } */
+
+  .messages-container {
+    /* padding-bottom: 110px; /* Bu satır, JavaScript ile dinamik olarak ayarlanacağı için yorumlandı */
+  }
 }
 
 
@@ -355,9 +355,9 @@ button,
 input,
 textarea,
 .transition-all {
-  transition-property: all; 
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); 
-  transition-duration: 150ms; 
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
 .button-backlight-enabled button,
@@ -429,15 +429,15 @@ canvas {
 .twilight .bg-white {
   background-color: rgb(var(--tw-bg-surface));
 }
-.twilight .bg-gray-50 { 
-  background-color: rgba(var(--tw-bg-surface), 0.7); 
+.twilight .bg-gray-50 {
+  background-color: rgba(var(--tw-bg-surface), 0.7);
 }
-.twilight .dark\:bg-gray-800 { 
+.twilight .dark\:bg-gray-800 {
     background-color: rgb(var(--tw-bg-surface));
 }
 
 .twilight .bg-gray-100 { /* For assistant message bubbles */
-  background-color: rgb(var(--tw-bg-surface)); 
+  background-color: rgb(var(--tw-bg-surface));
 }
 .twilight .dark\:bg-gray-700\/50 { /* For some settings panels */
     background-color: rgba(var(--tw-bg-surface), 0.5);
@@ -450,7 +450,7 @@ canvas {
 .twilight .text-gray-900 {
   color: rgb(var(--tw-text-primary));
 }
-.twilight .dark\:text-white { 
+.twilight .dark\:text-white {
     color: rgb(var(--tw-text-primary));
 }
 .twilight .dark\:text-gray-100 { /* For input text */
@@ -470,7 +470,7 @@ canvas {
 .twilight .border-gray-200 {
   border-color: rgb(var(--tw-border-color));
 }
-.twilight .dark\:border-gray-700 { 
+.twilight .dark\:border-gray-700 {
     border-color: rgb(var(--tw-border-color));
 }
 .twilight .dark\:border-gray-800 { /* For input fixed bar */
@@ -527,7 +527,7 @@ canvas {
   @apply bg-gray-700;
 }
 .twilight .message-bubble > div > p code,
-.twilight .message-bubble > div > ul code, 
+.twilight .message-bubble > div > ul code,
 .twilight .message-bubble > div > ol code,
 .twilight .message-bubble > div > li code {
   @apply bg-gray-700 text-red-400;
@@ -598,3 +598,4 @@ canvas {
 .profile-menu-item:nth-child(3) {
   animation-delay: 0.2s;
 }
+/* Sonradan eklenen fazladan küme parantezi kaldırıldı */

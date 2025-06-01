@@ -76,3 +76,18 @@ export interface DailyJournalEntry {
   date: string; // YYYY-MM-DD
   logs: JournalLogItem[];
 }
+export interface ChatMetadata {
+  id: string;
+  title: string;
+}
+
+export interface SyncedData {
+  chats?: Chat[]; // Bu, Supabase'den gelen tüm sohbetleri (mesajlarıyla birlikte) veya senkronize edilecek yapıyı temsil eder
+  userProfile?: UserProfile | null;
+  theme?: Theme;
+  splashGif?: string;
+  sidebarSettings?: SidebarSettings;
+  uiSettings?: UISettings;
+  aiSettings?: AISettings;
+  aiJournal?: DailyJournalEntry[];
+}

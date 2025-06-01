@@ -335,11 +335,9 @@
     max-height: 60vh; 
   }
   
-  .messages-container {
-  /* padding-bottom, ChatWindow.tsx içindeki style prop'u ile dinamik olarak ayarlanacak */
-  /* padding-top da ChatWindow.tsx içinde arama çubuğu için ayarlanacak */
-  /* Diğer temel stiller burada kalabilir */
-  overflow-y: auto; /* Dikey kaydırma her zaman aktif */
+  /* .messages-container { */
+    /* padding-bottom: 110px; /* Bu satır kaldırıldı, JavaScript ile dinamik olarak ayarlanacak */ */
+  /* } */
 }
 
 
